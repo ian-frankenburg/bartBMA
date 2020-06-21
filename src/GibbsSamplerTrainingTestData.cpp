@@ -210,12 +210,12 @@ NumericMatrix remove_curr_col(NumericMatrix predy,int i){
   // [[Rcpp::export]]
 NumericVector get_new_mean(IntegerVector terminal_nodes,List new_mean_var){
   NumericVector node_means;
+  /// MY NOTE: this might be the function I need
   for(int k=0;k<terminal_nodes.size();k++){
     NumericVector sd=new_mean_var[1];
     NumericVector temp_mean=new_mean_var[0];
     double new_mean= R::rnorm(temp_mean[k],sqrt(sd[k]));
     node_means.push_back(new_mean);
-    
   }
   
   return(node_means);
@@ -458,8 +458,8 @@ List gibbs_sampler(List overall_sum_trees,List overall_sum_mat,NumericVector y,N
 if(burnin>=num_iter){
 throw std::range_error("Number of iterations has to be greater than the number of burn-in samples");
 }
-//get tree info just once don't repeat for each iteration:
-  //need terminal nodes, terminal node means and observations terminal nodes refer to
+// get tree info just once don't repeat for each iteration:
+// need terminal nodes, terminal node means and observations terminal nodes refer to
 List tree_info=get_tree_info(overall_sum_trees,overall_sum_mat,num_obs);
 List test_tree_info=get_tree_info_testdata_overall(overall_sum_trees,num_test_obs,test_data);
 List overall_term_test_obs_trees=test_tree_info[1];
@@ -509,7 +509,13 @@ for(int i=0;i<overall_sum_trees.size();i++){
     NumericMatrix sum_new_predictions(sum_predictions.nrow(),sum_predictions.ncol());
     NumericMatrix sum_new_test_predictions(sum_predictions.nrow(),sum_predictions.ncol());
     
+    // MY CODE: preallocate matrix to store mcmc runs within
+    // NumericMatrix M_chain(num_iter, sum_tree.size())
+    // also need to allocate the temporary row vector in which I'll push
+
+    // mcmc runs
     for(int j=0;j<num_iter;j++){
+      // loop through each tree within the overall tree sum
       for(int k =0;k<sum_tree.size();k++){
         NumericMatrix tree_table=sum_tree[k];
         IntegerMatrix tree_mat=sum_tree_mat[k];
@@ -520,13 +526,22 @@ for(int i=0;i<overall_sum_trees.size();i++){
         NumericVector predictions=sum_resids[k];
         //current predictions are the residuals for sum of trees!
           
-          //update the means and predictions for tree
+        //update the means and predictions for tree
         List new_node_mean_var=update_Gibbs_mean_var(tree_table,predictions,a,sigma,mu_mu,term_nodes,term_obs);
         NumericVector new_node_mean=get_new_mean(term_nodes,new_node_mean_var);
+        // MY CODE HERE:
+        // ==================
+        // the above line returns the gibbs-sampled means i.e full conditional of M; I'll have one of these for each tree
+        // within each overall sum-of-trees
+        // my plan is then to append this onto a big vector which will ultimately comprise "O"
+        // I'll then stick this vector into a row of a matrix, of which there are num_iter rows (mcmc runs)
+        // ==================
+        
         NumericVector new_node_var=new_node_mean_var[1];
+        
         //update predictions by setting predicted value for term_obs[termnode]=new mean value!
           
-          List updated_preds=update_predictions_gs(tree_table,new_node_mean,new_node_var,num_obs,term_nodes,term_obs);         
+        List updated_preds=update_predictions_gs(tree_table,new_node_mean,new_node_var,num_obs,term_nodes,term_obs);         
         NumericVector temp_preds=updated_preds[1];
         sum_new_predictions(_,k)=temp_preds;
         
@@ -536,9 +551,14 @@ for(int i=0;i<overall_sum_trees.size();i++){
         sum_new_test_predictions(_,k)=temp_test_preds;
         
         //get overall predictions for current iteration and current sum of trees
-        sigma= update_sigma(a1,b,predictions,num_obs);
+        sigma=update_sigma(a1,b,predictions,num_obs);
         sigma_its[j]=sigma;
       }
+      // MY CODE HERE:
+      // ======================
+      // this is where the row should be placed within the matrix
+      // ======================
+      
       NumericVector pred_obs=calc_rowsums(sum_new_predictions);
       post_predictions(j,_)=pred_obs;
       NumericVector original_y=get_original_gs(min(y),max(y),-0.5,0.5,pred_obs);    
@@ -654,6 +674,7 @@ if(one_tree==1){
   predictive_dist_train_list[0]=post_predictions_PI;
   predictive_dist_train_list_orig[0]= post_predictions_orig_PI;
 }
+// my code; need to increment size by 1 after I have M chain stored
 List ret(7);
 NumericVector test2=sigma_chains[0];
 ret[0]= prediction_list;
@@ -663,6 +684,8 @@ ret[3]=prediction_test_list;
 ret[4]=prediction_test_list_orig;
 ret[5]=predictive_dist_train_list;
 ret[6]=predictive_dist_train_list_orig;
+// MY CODE; add slot in ret in which to stick M chain
+// ret[7]
 return(ret); 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -705,7 +728,7 @@ List gibbs_sampler2(List overall_sum_trees,List overall_sum_mat,NumericVector y,
   //NumericMatrix sum_test_predictions;
   
   if(is<List>(s)){
-  //if current set of trees contains more than one tree
+  //if current set of trees contains more than one tree, usually does!
   List sum_tree=overall_sum_trees1[i];
   List sum_tree_mat=overall_sum_mat1[i];
   List sum_term_nodes=overall_term_nodes_trees[i];
@@ -751,7 +774,9 @@ List gibbs_sampler2(List overall_sum_trees,List overall_sum_mat,NumericVector y,
   //sum_new_test_predictions(_,k)=temp_test_preds;
   
   //get overall predictions for current iteration and current sum of trees
-  sigma= update_sigma(a1,b,predictions,num_obs);
+  sigma = update_sigma(a1,b,predictions,num_obs);
+  //MY NOTE: I THINK THIS SIGMA_ITS is what I need
+  //just need to make one for the mu list
   sigma_its[j]=sigma;
   }
   
@@ -828,7 +853,7 @@ List gibbs_sampler2(List overall_sum_trees,List overall_sum_mat,NumericVector y,
   //sum_test_predictions(_,i)=temp_test_preds;
   NumericVector S=calculate_resids(sum_predictions,y_scaled);  
   //get overall predictions for current iteration and current sum of trees
-  sigma= update_sigma(a1,b,S,num_obs);
+  sigma = update_sigma(a1,b,S,num_obs);
   sigma_its[j]=sigma;
   }
   NumericVector pred_obs=calc_rowsums(sum_predictions);

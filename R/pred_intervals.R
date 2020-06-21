@@ -16,7 +16,9 @@ pred_intervals<-function(object,num_iter,burnin,l_quant,u_quant,newdata=NULL){
     gs_chains<-gibbs_sampler(object$sumoftrees,object$obs_to_termNodesMatrix,object$response,object$bic,num_iter, burnin,object$nrowTrain,
                              nrow(newdata), object$a,object$sigma,0,object$nu,object$lambda,object$sum_residuals,newdata)
   }
-  
+  ### MY CODE; return sigma chain
+  check <- gs_chains[[3]]
+  ###
   y_posterior_sum_trees<-gs_chains[[4]]
   y_orig_post_sum_trees<-gs_chains[[5]]
   sum_of_tree_BIC<-unlist(object$bic)
@@ -42,8 +44,9 @@ pred_intervals<-function(object,num_iter,burnin,l_quant,u_quant,newdata=NULL){
   
   
   ret<-list()
-  length(ret)<-1
-  ret[[1]]<-PI
+  length(ret)<-2
+  ret[[1]] <- PI
+  ret[[2]] <- check
   
   class(ret)<-"pred_intervals.bartBMA"  
   ret
