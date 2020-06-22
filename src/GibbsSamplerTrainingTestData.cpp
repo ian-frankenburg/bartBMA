@@ -517,8 +517,13 @@ for(int i=0;i<overall_sum_trees.size();i++){
     
     // MY CODE: preallocate matrix to store mcmc runs within
     // initialize beta_its to be of size (num_iter) x (total num termal nodes)
-    //
-    NumericMatrix beta_its(num_iter, sum_term_nodes.size());
+    // loop to count total num termal nodes
+    int counter = 0;
+    for(int m=0; m<sum_tree.size(); m++){
+      NumericVector temp = sum_term_nodes[m];
+      counter+=temp.size();
+    }
+    NumericMatrix beta_its(num_iter, counter);
     // also need to allocate the temporary row vector in which I'll push the mcmc runs
     //
     for(int j=0;j<num_iter;j++){
@@ -700,7 +705,7 @@ ret[3]=prediction_test_list;
 ret[4]=prediction_test_list_orig;
 ret[5]=predictive_dist_train_list;
 ret[6]=predictive_dist_train_list_orig;
-// MY CODE; add slot in ret in which to stick M chain
+// MY CODE; add slot in ret in which to stick beta chain
 ret[7]=beta_chains;
 
 return(ret); 
