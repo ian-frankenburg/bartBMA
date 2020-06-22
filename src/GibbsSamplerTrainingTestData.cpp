@@ -6,6 +6,7 @@
 //(will also have to update external predict function for test predictions)
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
+using namespace std;
 using namespace Rcpp;
 // [[Rcpp::export]]
 
@@ -453,7 +454,6 @@ return(ret);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-
 List gibbs_sampler(List overall_sum_trees,List overall_sum_mat,NumericVector y,NumericVector BIC_weights,int num_iter,int burnin,int num_obs,int num_test_obs,double a,double sigma,double mu_mu,double nu,double lambda,List resids,NumericMatrix test_data){
 if(burnin>=num_iter){
 throw std::range_error("Number of iterations has to be greater than the number of burn-in samples");
@@ -480,15 +480,21 @@ List prediction_test_list_orig(overall_sum_trees.size());
 List overall_sum_trees1=clone(overall_sum_trees);
 List overall_sum_mat1=clone(overall_sum_mat); 
 List sigma_chains(overall_sum_trees.size());
+
+// my code to initialize beta chain; e.g 2 sums of trees in which to stack or average
+// this will store beta_its
+List beta_chains(overall_sum_trees.size());
+//
 int one_tree=0;
 for(int i=0;i<overall_sum_trees.size();i++){
-  //for each set of trees loop over individual trees    
+  // for each set of trees loop over individual trees    
   NumericVector sigma_its(num_iter);
   sigma=sigma_init;
   SEXP s = overall_sum_trees[i];
   NumericVector test_preds_sum_tree;
   NumericMatrix sum_predictions;
   NumericMatrix sum_test_predictions;
+
   
   if(is<List>(s)){
     //if current set of trees contains more than one tree
@@ -510,11 +516,13 @@ for(int i=0;i<overall_sum_trees.size();i++){
     NumericMatrix sum_new_test_predictions(sum_predictions.nrow(),sum_predictions.ncol());
     
     // MY CODE: preallocate matrix to store mcmc runs within
-    // NumericMatrix M_chain(num_iter, sum_tree.size())
-    // also need to allocate the temporary row vector in which I'll push
-
-    // mcmc runs
+    // initialize beta_its to be of size (num_iter) x (total num termal nodes)
+    //
+    NumericMatrix beta_its(num_iter, sum_term_nodes.size());
+    // also need to allocate the temporary row vector in which I'll push the mcmc runs
+    //
     for(int j=0;j<num_iter;j++){
+      NumericVector beta;
       // loop through each tree within the overall tree sum
       for(int k =0;k<sum_tree.size();k++){
         NumericMatrix tree_table=sum_tree[k];
@@ -530,15 +538,20 @@ for(int i=0;i<overall_sum_trees.size();i++){
         List new_node_mean_var=update_Gibbs_mean_var(tree_table,predictions,a,sigma,mu_mu,term_nodes,term_obs);
         NumericVector new_node_mean=get_new_mean(term_nodes,new_node_mean_var);
         // MY CODE HERE:
-        // ==================
+        // ====================
         // the above line returns the gibbs-sampled means i.e full conditional of M; I'll have one of these for each tree
         // within each overall sum-of-trees
         // my plan is then to append this onto a big vector which will ultimately comprise "O"
         // I'll then stick this vector into a row of a matrix, of which there are num_iter rows (mcmc runs)
-        // ==================
+        //beta.insert(std::end(beta), std::begin(new_node_mean), std::end(new_node_mean));
+        for(int l=0;l<new_node_mean.size();l++){
+          beta.push_back(new_node_mean[l]);
+        }
+
+        //
+        // ====================
         
         NumericVector new_node_var=new_node_mean_var[1];
-        
         //update predictions by setting predicted value for term_obs[termnode]=new mean value!
           
         List updated_preds=update_predictions_gs(tree_table,new_node_mean,new_node_var,num_obs,term_nodes,term_obs);         
@@ -554,10 +567,12 @@ for(int i=0;i<overall_sum_trees.size();i++){
         sigma=update_sigma(a1,b,predictions,num_obs);
         sigma_its[j]=sigma;
       }
-      // MY CODE HERE:
+      // MY CODE:
       // ======================
       // this is where the row should be placed within the matrix
       // ======================
+      beta_its.row(j)=beta;
+      //
       
       NumericVector pred_obs=calc_rowsums(sum_new_predictions);
       post_predictions(j,_)=pred_obs;
@@ -588,7 +603,8 @@ for(int i=0;i<overall_sum_trees.size();i++){
       predictive_dist_train_list_orig[i]= post_predictions_orig_PI;
     }
     sigma_chains[i]=sigma_its;
-    
+    // my code to store beta_its matrix; currently this is just a single beta
+    beta_chains[i]=beta_its;
   }else{        
     one_tree=1;
   }      
@@ -675,7 +691,7 @@ if(one_tree==1){
   predictive_dist_train_list_orig[0]= post_predictions_orig_PI;
 }
 // my code; need to increment size by 1 after I have M chain stored
-List ret(7);
+List ret(8);
 NumericVector test2=sigma_chains[0];
 ret[0]= prediction_list;
 ret[1]= prediction_list_orig;
@@ -685,7 +701,8 @@ ret[4]=prediction_test_list_orig;
 ret[5]=predictive_dist_train_list;
 ret[6]=predictive_dist_train_list_orig;
 // MY CODE; add slot in ret in which to stick M chain
-// ret[7]
+ret[7]=beta_chains;
+
 return(ret); 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
