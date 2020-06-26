@@ -481,7 +481,7 @@ List overall_sum_trees1=clone(overall_sum_trees);
 List overall_sum_mat1=clone(overall_sum_mat); 
 List sigma_chains(overall_sum_trees.size());
 
-// my code to initialize beta chain; e.g 2 sums of trees in which to stack or average
+// my code to initialize beta chain; e.g 10 sums of trees in which to stack or average
 // this will store beta_its
 List beta_chains(overall_sum_trees.size());
 //
@@ -516,7 +516,7 @@ for(int i=0;i<overall_sum_trees.size();i++){
     NumericMatrix sum_new_test_predictions(sum_predictions.nrow(),sum_predictions.ncol());
     
     // MY CODE: preallocate matrix to store mcmc runs within
-    // initialize beta_its to be of size (num_iter) x (total num termal nodes)
+    // initialize beta_its to be of size (num_iter) x (total num terminal nodes)
     // loop to count total num termal nodes
     int counter = 0;
     for(int m=0; m<sum_tree.size(); m++){
@@ -529,10 +529,10 @@ for(int i=0;i<overall_sum_trees.size();i++){
     for(int j=0;j<num_iter;j++){
       NumericVector beta;
       // loop through each tree within the overall tree sum
-      for(int k =0;k<sum_tree.size();k++){
+      for(int k =0; k<sum_tree.size(); k++){
         NumericMatrix tree_table=sum_tree[k];
         IntegerMatrix tree_mat=sum_tree_mat[k];
-        //find terminal node means and observations associated with them
+        // find terminal node means and observations associated with them
         IntegerVector term_nodes=sum_term_nodes[k];
         List term_obs=sum_term_obs[k];
         List term_test_obs=sum_term_test_obs[k];
@@ -548,7 +548,6 @@ for(int i=0;i<overall_sum_trees.size();i++){
         // within each overall sum-of-trees
         // my plan is then to append this onto a big vector which will ultimately comprise "O"
         // I'll then stick this vector into a row of a matrix, of which there are num_iter rows (mcmc runs)
-        //beta.insert(std::end(beta), std::begin(new_node_mean), std::end(new_node_mean));
         for(int l=0;l<new_node_mean.size();l++){
           beta.push_back(new_node_mean[l]);
         }
@@ -695,8 +694,10 @@ if(one_tree==1){
   predictive_dist_train_list[0]=post_predictions_PI;
   predictive_dist_train_list_orig[0]= post_predictions_orig_PI;
 }
+
 // my code; need to increment size by 1 after I have M chain stored
 List ret(8);
+//
 NumericVector test2=sigma_chains[0];
 ret[0]= prediction_list;
 ret[1]= prediction_list_orig;
@@ -707,7 +708,7 @@ ret[5]=predictive_dist_train_list;
 ret[6]=predictive_dist_train_list_orig;
 // MY CODE; add slot in ret in which to stick beta chain
 ret[7]=beta_chains;
-
+//
 return(ret); 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
