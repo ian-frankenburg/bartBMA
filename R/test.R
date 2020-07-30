@@ -1,45 +1,9 @@
 # library(loo)
-# library(rstanarm)
 # library(mvnfast)
+# library(gtools)
 # library(randomForest)
 # library(Metrics)
-# if(0){
-#   N <- 25
-#   p<- 1000
-#   set.seed(100)
-# 
-#   epsilon <- rnorm(N)
-#   xcov <- matrix(runif(N*p), nrow=N)
-#   y <- sin(pi*xcov[,1]*xcov[,2]) + 20*(xcov[,3]-0.5)^2+10*xcov[,4]+5*xcov[,5]+epsilon
-# 
-#   epsilontest <- rnorm(N)
-#   xcovtest <- matrix(runif(N*p), nrow=N)
-#   ytest <- sin(pi*xcovtest[,1]*xcovtest[,2]) + 20*(xcovtest[,3]-0.5)^2+10*xcovtest[,4]+5*xcovtest[,5]+epsilontest
-# 
-#   library(mlbench)
-#   data(BostonHousing)
-#   y <- BostonHousing$medv
-#   X <- BostonHousing[,-which(colnames(BostonHousing)=="medv")]
-#   X$chas <- as.numeric(X$chas)
-#   dat <- cbind(y,X)
-#   train_ind = sample(seq_len(nrow(dat)),size = floor(.8*nrow(dat)), replace=F)
-#   train = dat[train_ind,]
-#   test = dat[-train_ind,]
-#   ytest = as.vector(test$y)
-#   start.time <- Sys.time()
-#   xcov <- as.matrix(train[,-1]); y <- as.vector(train$y)
-#   xcovtest <- as.matrix(test[,-1])
-# 
-#   bart_bma <- bartBMA(x.train = xcov,y.train=y,x.test=xcovtest)
-#   bmapred <- predict(bart_bma, newdata = xcovtest)
-#   rf <- predict(randomForest(x = xcov, y = y), newdata = xcovtest)
-#   rmse(ytest, bmapred)
-#   rmse(ytest, rf)
-#   foo <- pred_intervals(bart_bma, num_iter = 5000, burnin = 1000, l_quant = .25, u_quant = .75)
-#   #  get posterior draws of sigma and beta
-#   sigma_chains <- foo[[2]]
-#   beta_chains <- foo[[3]]
-# }
+# set.seed(314)
 # ### BUILD SUM-OF-TREE LIKELIHOOD IN ANOVA FORM
 # parseTreeSums <- function(bart_bma){
 #   foo <- bart_bma$sumoftrees
@@ -100,59 +64,183 @@
 #     )
 #   )
 # }
-# parsed <- parseTreeSums(bart_bma)
 # 
-# #### FOR TESTING POINTWISE LOG-LIKELIHOOD BATCH COMPUTING CODE
-# # mean <- rep(0,length(y))
-# # i=j=1
-# # mean_list <- list()
-# # # trying to just construct mean function by defintion
-# meanbuilder <- function(anovas, beta, mcmcdraw){
-#   for(i in 1:length(anovas)){
-#     sum_trees <- parsed$anovas[[i]]
-#     params <- beta_chains[[i]]
-#     for(j in 1:length(sum_trees)){
-#       temp <- as.matrix(sum_trees[[j]])
-#       mean = mean + temp %*% params[mcmcdraw, 1:ncol(temp)]
-#       params <- params[,-c(1:ncol(temp))]
-#       j=j+1
-#     }
-#     mean_list[[i]] = mean
-#   }
-#   return(mean_list)
-# }
-# a <- rep(0,4000)
-# for(i in 1000:5000){
-# mcmcdraw=i
-# t = 1
-# obs = 2
-# mu <- meanbuilder(parsed$anovas, beta_chains, mcmcdraw)
-# sigma <- sigma_chains[[t]][mcmcdraw]
-# a[i] <- dnorm(y[obs], mu[[t]][obs], sd = sigma, log=T)
-# }
-# plot(density(a))
-# View(log_like_mat[[t]])
 # 
-# ### USE POSTERIOR DRAWS TO EVALUATE POINTWISE LIKELIHOOD NEEDED FOR STACKING
+# # #####################
+# # DATA PROCESSING
+# #####################
+# # library(mlbench)
+# # data(BostonHousing)
+# # y <- BostonHousing$medv
+# # X <- BostonHousing[,-which(colnames(BostonHousing)=="medv")]
+# # X$chas <- as.numeric(X$chas)
+# # dat <- cbind(y,X)
+# 
+# 
+# # #####################
+# # DATA PROCESSING
+# #####################
+# # abalone <- read.csv("~/Downloads/abalone.data", header=FALSE)
+# # abalone <- abalone[complete.cases(abalone),]
+# # X <- abalone[,-which(colnames(abalone)=="V9")]
+# # X[,1] <- as.numeric(as.factor(X[,1]))
+# # y <- abalone$V9
+# # dat <- cbind(y,X)
+# 
+# # #####################
+# # DATA PROCESSING
+# #####################
+# # xcov <- read.table("~/Downloads/Arcene/arcene_train.data", quote="\"", comment.char="")
+# # y <- read.table("~/Downloads/Arcene/arcene_train.labels", quote="\"", comment.char="")
+# # y = as.numeric(y==1)
+# # dat <- cbind(y,xcov)
+# # xcovtest <-  read.table("~/Downloads/Arcene/arcene_valid.data", quote="\"", comment.char="")
+# # ytest <- read.table("~/Downloads/arcene_valid.labels", quote="\"", comment.char="")
+# # ytest = as.numeric(ytest==1)
+# #
+# # xcov=xcov[,1:1000]
+# # xcovtest=xcovtest[,1:1000]
+# # #####################
+# # DATA PROCESSING
+# #####################
+# # library(ISLR)
+# data("Auto")
+# dat <- Auto[complete.cases(Auto),]
+# dat <- dat[,-ncol(dat)]
+# colnames(dat)[1] <- "y"
+# scol = 10
+# spur <- matrix(runif(nrow(dat)*scol,0,1),nrow=nrow(dat),ncol=scol)
+# xcov <- as.matrix(cbind(dat[,-1],spur))
+# y = dat[,1]
+# 
+# ## add more spurious
+# scol = 500
+# spur <- matrix(runif(nrow(dat)*scol,0,1),nrow=nrow(dat),ncol=scol)
+# xcov <- as.matrix(cbind(xcov,spur))
+# 
+# # N=1000; p=1000
+# # epsilon <- rnorm(N)
+# # xcov <- matrix(runif(N*p), nrow=N)
+# # y <- sin(pi*xcov[,1]*xcov[,2]) + 20*(xcov[,3]-0.5)^2+10*xcov[,4]+5*xcov[,5]+epsilon+
+# #   (xcov[,6]^3-2)^3 + xcov[,7]*3
+# 
+# smp_size <- floor(0.75 * nrow(xcov))
+# 
+# train_ind <- sample(seq_len(nrow(xcov)), size = smp_size)
+# 
+# xcovtrain <- xcov[train_ind, ]
+# ytrain <- y[train_ind]
+# 
+# xcovtest <- xcov[-train_ind, ]
+# ytest <- y[-train_ind]
+# 
+# {
+# start.time2 <- Sys.time()
+# bart_bma_fit <- bartBMA.default(x.train = xcovtrain,y.train=ytrain,x.test=xcovtest,
+#                                  gridpoint = 1, c=5000, pen = 10, maxOWsize = 20)
+# end.time2 <- Sys.time(); end.time2 - start.time2
+# }
+# length(bart_bma_fit$sumoftrees)
+# 
+# clas <- predict.bartBMA(bart_bma_fit, newdata = xcovtest)
+# mse(ytest,clas)
+# 
+# start.time2 <- Sys.time()
+# rf=randomForest(x = as.matrix(xcovtrain), y=ytrain)
+# time.taken2 <- end.time2 - start.time2; time.taken2
+# mse(ytest,predict(rf, newdata = as.matrix(xcovtest)))
+# end.time2 <- Sys.time(); end.time2 - start.time2
+# 
+# vars=colnames(xcovtrain)
+# which(varImpScores(bart_bma_fit, bart_bma_fit$bic)>0)
+# varImpPlot(rf)
+# 
+# foo <- pred_intervals(bart_bma_fit, num_iter = 5000, burnin = 1000,0.25,0.75)
+# #  get posterior draws of sigma and beta
+# sigma_chains <- foo[[2]]
+# beta_chains <- foo[[3]]
+# 
+# 
+# parsed <- parseTreeSums(bart_bma_fit)
+# 
+# ### USE POSTERIOR DRAWS TO EVALUATE POINT-WISE LIKELIHOOD NEEDED FOR STACKING
 # temp <- rep(0, length(sigma_chains))
 # log_like_mat <- loolist <- list()
-# length(log_like_mat) <- length(bart_bma$sumoftrees)
-# length(loolist) <- length(bart_bma$sumoftrees)
+# length(log_like_mat) <- length(bart_bma_fit$sumoftrees)
+# length(loolist) <- length(bart_bma_fit$sumoftrees)
 # i=j=n=1
 # for(i in 1:length(sigma_chains)){
 #   sigma_mcmc <- sigma_chains[[i]]
 #   beta_mcmc <- beta_chains[[i]]
 #   w <- parsed$W[[i]]
-#   loglik <- matrix(0, nrow=length(sigma_mcmc), ncol=length(y))
+#   loglik <- matrix(0, nrow=length(sigma_mcmc), ncol=length(ytrain))
 #   beta = parsed$O[[i]]
 #   for(j in 1:(nrow(beta_mcmc))){
-#     for(n in 1:length(y)){
-#       loglik[j,n] = dnorm(y[n], mean = w[n,]%*%beta_mcmc[j,], sd = sigma_mcmc[j], log=T)
+#     for(n in 1:length(ytrain)){
+#       loglik[j,n] = dnorm(ytrain[n], mean = w[n,]%*%beta_mcmc[j,], sd = 1/sigma_mcmc[j], log=T)
 #       #loglik[j,n] = dnorm(y[n], mean = w[n,]%*%beta, sd = sigma_mcmc[j], log=T)
 #     }
 #   }
 #   log_like_mat[[i]] <- loglik
-#   loolist[[i]] <- loo(loglik)
+#   loolist[[i]] <- loo(loglik)#, r_eff = exp(colSums(loglik)))
 # }
-# loolist
-# loo_model_weights(loolist, method = "stacking")
+# wts = loo_model_weights(loolist, method = "stacking")
+# b <- exp(bart_bma_fit$bic-max(bart_bma_fit$bic))/sum(exp(bart_bma_fit$bic-max(bart_bma_fit$bic)))
+# 
+# stackwts = wts
+# bmawts = b
+# 
+# bmapred <- predict.bartBMA(bart_bma_fit, newdata = xcovtest)
+# stackpred <- predict.bartStack(bart_bma_fit, newdata = xcovtest, wts)
+# #pseudpred <- predict_bartPseud(bart_bma, newdata = xcovtest)
+# mse(ytest, bmapred)
+# sum(abs(ytest- bmapred))
+# mse(ytest, stackpred)
+# sum(abs(ytest- stackpred))
+# 1-sum(abs(as.numeric(wts)-round(as.numeric(wts),6)))
+# sum(round(as.numeric(wts),5)>0)
+# sum(round(as.numeric(b),5)>0)
+# 
+# yes = bart_bma_fit$sumoftrees[which(as.numeric(wts)>1e-4)]
+# which(varImpScoresStack(p,wts,yes)>0)
+# 
+# yes = bart_bma_fit$sumoftrees[which(as.numeric(b)>1e-4)]
+# which(varImpScoresStack(p,b,yes)>0)
+# #mse3[q] <- mse(ytest, pseudpred)
+# # start.time2 <- Sys.time()
+# # rf <- predict(randomForest(x = xcov, y = y), newdata = xcovtest)
+# # end.time2 <- Sys.time()
+# # time.taken2 <- end.time2 - start.time2
+# # time.taken2
+# 
+# # mse4[q] <- mse(ytest, rf)
+# # print(q)
+# # #}
+# # end.time <- Sys.time()
+# # time.taken <- end.time - start.time
+# # time.taken
+# # as.data.frame(cbind(
+# #   "BMA" = mse1,
+# #   "Stacking" = mse2,
+# #   "RF" = mse4)
+# # )
+# 
+# 
+# # epsilon <- rnorm(N)
+# # xcov <- matrix(runif(N*p), nrow=N)
+# # y <- sin(pi*xcov[,1]*xcov[,2]) + 20*(xcov[,3]-0.5)^2+10*xcov[,4]+5*xcov[,5]+epsilon
+# #
+# # library(ISLR)
+# # data("Auto")
+# # dat <- Auto[complete.cases(Auto),]
+# # dat <- dat[,-ncol(dat)]
+# # colnames(dat)[1] <- "y"
+# # scol = 5000
+# # spur <- matrix(runif(nrow(dat)*scol,0,1),nrow=nrow(dat),ncol=scol)
+# # xcov <- as.matrix(cbind(dat[,-1],spur))
+# # y = dat[,1]
+# #
+# # bart_bma_example <- bartBMA.default(x.train = xcov,y.train=y,x.test=xcov, pen=10,gridpoint = 1)
+# # length(bart_bma_example$sum)
+# # a<-pred_intervals(bart_bma_example,num_iter = 2000,burnin = 500,0.25,0.75)
+# #

@@ -168,7 +168,7 @@ NumericVector bartBMA_get_testdata_term_obs_pred(NumericMatrix test_data,Numeric
 using namespace Rcpp;
 // [[Rcpp::export]]
 
-List get_BART_BMA_test_predictions(NumericMatrix test_data,NumericVector BIC,List sum_trees,NumericVector y_minmax){
+List get_BART_BMA_test_predictions(NumericMatrix test_data,NumericVector BIC,List sum_trees,NumericVector y_minmax, int stack){
   //this will take in a set of sum of trees and loop through each tree in each set.
   //for each tree in each set:
     //call bartBMA_get_testdata_term_obs_pred() and get the predicted values
@@ -227,7 +227,14 @@ List get_BART_BMA_test_predictions(NumericMatrix test_data,NumericVector BIC,Lis
   for(int k=0;k<BIC.size();k++){  
     NumericVector temp_test_preds=sum_tree_preds(_,k);
    // NumericVector orig_temp_preds=get_original_pred(min(y),max(y),-0.5,0.5,temp_preds) ;
-    double weight=BIC[k]/sum(BIC);
+    // My code: changed BIC[k]/sum(BIC) to exp(BIC[k])/sum(exp(BIC));
+    double weight;
+    if(stack==1){
+      weight = BIC[k];
+    }else{
+      weight=exp(-.5*BIC[k])/sum(-.5*exp(BIC));
+    }
+    //double weight=exp(-.5*BIC[k])/sum(-.5*exp(BIC));
     overall_test_preds(_,k) = temp_test_preds*weight;
   }     
   //sum over all the weighted predictions;

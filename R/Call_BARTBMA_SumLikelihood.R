@@ -1,5 +1,6 @@
 BARTBMA_SumLik=function(x.train,y.train,a=3,nu=3,sigquant=0.9,c=1000,
-                   pen=12,num_cp=20,x.test=matrix(0.0,0,0),num_rounds=5,alpha=0.95,beta=1,split_rule_node=0,gridpoint=0,maxOWsize=100
+                   pen=12,num_cp=20,x.test=matrix(0.0,0,0),num_rounds=5,
+                   alpha=0.95,beta=1,split_rule_node=0,gridpoint=0,maxOWsize=100
 ){
   binary=FALSE
   start_mean=0

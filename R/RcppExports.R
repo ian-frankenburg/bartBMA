@@ -17,8 +17,8 @@ bartBMA_get_testdata_term_obs_pred <- function(test_data, tree_data, term_node_m
     .Call(`_bartBMA_bartBMA_get_testdata_term_obs_pred`, test_data, tree_data, term_node_means)
 }
 
-get_BART_BMA_test_predictions <- function(test_data, BIC, sum_trees, y_minmax) {
-    .Call(`_bartBMA_get_BART_BMA_test_predictions`, test_data, BIC, sum_trees, y_minmax)
+get_BART_BMA_test_predictions <- function(test_data, BIC, sum_trees, y_minmax, stack) {
+    .Call(`_bartBMA_get_BART_BMA_test_predictions`, test_data, BIC, sum_trees, y_minmax, stack)
 }
 
 get_imp_vars <- function(split_vars, num_col, current_vars) {

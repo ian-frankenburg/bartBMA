@@ -57,8 +57,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // get_BART_BMA_test_predictions
-List get_BART_BMA_test_predictions(NumericMatrix test_data, NumericVector BIC, List sum_trees, NumericVector y_minmax);
-RcppExport SEXP _bartBMA_get_BART_BMA_test_predictions(SEXP test_dataSEXP, SEXP BICSEXP, SEXP sum_treesSEXP, SEXP y_minmaxSEXP) {
+List get_BART_BMA_test_predictions(NumericMatrix test_data, NumericVector BIC, List sum_trees, NumericVector y_minmax, int stack);
+RcppExport SEXP _bartBMA_get_BART_BMA_test_predictions(SEXP test_dataSEXP, SEXP BICSEXP, SEXP sum_treesSEXP, SEXP y_minmaxSEXP, SEXP stackSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -66,7 +66,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type BIC(BICSEXP);
     Rcpp::traits::input_parameter< List >::type sum_trees(sum_treesSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type y_minmax(y_minmaxSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_BART_BMA_test_predictions(test_data, BIC, sum_trees, y_minmax));
+    Rcpp::traits::input_parameter< int >::type stack(stackSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_BART_BMA_test_predictions(test_data, BIC, sum_trees, y_minmax, stack));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1156,7 +1157,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bartBMA_find_term_nodes_pred", (DL_FUNC) &_bartBMA_find_term_nodes_pred, 1},
     {"_bartBMA_get_original_pred", (DL_FUNC) &_bartBMA_get_original_pred, 5},
     {"_bartBMA_bartBMA_get_testdata_term_obs_pred", (DL_FUNC) &_bartBMA_bartBMA_get_testdata_term_obs_pred, 3},
-    {"_bartBMA_get_BART_BMA_test_predictions", (DL_FUNC) &_bartBMA_get_BART_BMA_test_predictions, 4},
+    {"_bartBMA_get_BART_BMA_test_predictions", (DL_FUNC) &_bartBMA_get_BART_BMA_test_predictions, 5},
     {"_bartBMA_get_imp_vars", (DL_FUNC) &_bartBMA_get_imp_vars, 3},
     {"_bartBMA_get_weighted_var_imp", (DL_FUNC) &_bartBMA_get_weighted_var_imp, 3},
     {"_bartBMA_csample_num", (DL_FUNC) &_bartBMA_csample_num, 4},

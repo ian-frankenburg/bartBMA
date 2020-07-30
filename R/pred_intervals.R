@@ -6,6 +6,10 @@ pred_intervals<-function(object,num_iter,burnin,l_quant,u_quant,newdata=NULL){
     #if test data specified separately
     gs_chains<-gibbs_sampler(object$sumoftrees,object$obs_to_termNodesMatrix,object$response,object$bic,num_iter, burnin,object$nrowTrain,
                              nrow(object$test_data),object$a,object$sigma,0,object$nu,object$lambda,object$sum_residuals,object$test_data)
+    ### MY CODE; return sigma chain; return beta chain
+    check <- gs_chains[[3]]
+    check2 <- gs_chains[[8]]
+    ###
   }else if(is.null(newdata) && length(object)==14){
     #else return Pred Ints for training data
     gs_chains<-gibbs_sampler2(object$sumoftrees,object$obs_to_termNodesMatrix,object$response,object$bic,num_iter, burnin,object$nrowTrain,
@@ -15,11 +19,12 @@ pred_intervals<-function(object,num_iter,burnin,l_quant,u_quant,newdata=NULL){
     #if test data included in call to object
     gs_chains<-gibbs_sampler(object$sumoftrees,object$obs_to_termNodesMatrix,object$response,object$bic,num_iter, burnin,object$nrowTrain,
                              nrow(newdata), object$a,object$sigma,0,object$nu,object$lambda,object$sum_residuals,newdata)
+    ### MY CODE; return sigma chain; return beta chain
+    check <- gs_chains[[3]]
+    check2 <- gs_chains[[8]]
+    ###
   }
-  ### MY CODE; return sigma chain; return beta chain
-  check <- gs_chains[[3]]
-  check2 <- gs_chains[[8]]
-  ###
+  
   y_posterior_sum_trees<-gs_chains[[4]]
   y_orig_post_sum_trees<-gs_chains[[5]]
   sum_of_tree_BIC<-unlist(object$bic)
@@ -46,7 +51,7 @@ pred_intervals<-function(object,num_iter,burnin,l_quant,u_quant,newdata=NULL){
   
   ret<-list()
   length(ret)<-3
-  ret[[1]] <- PI
+  ret[[1]]<-PI
   
   # my code to check beta and sigma chains
   ret[[2]] <- check

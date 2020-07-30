@@ -211,7 +211,6 @@ NumericMatrix remove_curr_col(NumericMatrix predy,int i){
   // [[Rcpp::export]]
 NumericVector get_new_mean(IntegerVector terminal_nodes,List new_mean_var){
   NumericVector node_means;
-  /// MY NOTE: this might be the function I need
   for(int k=0;k<terminal_nodes.size();k++){
     NumericVector sd=new_mean_var[1];
     NumericVector temp_mean=new_mean_var[0];
@@ -527,7 +526,9 @@ for(int i=0;i<overall_sum_trees.size();i++){
     // also need to allocate the temporary row vector in which I'll push the mcmc runs
     //
     for(int j=0;j<num_iter;j++){
+      // my code;
       NumericVector beta;
+      // end my code
       // loop through each tree within the overall tree sum
       for(int k =0; k<sum_tree.size(); k++){
         NumericMatrix tree_table=sum_tree[k];
@@ -576,7 +577,7 @@ for(int i=0;i<overall_sum_trees.size();i++){
       // this is where the row should be placed within the matrix
       // ======================
       beta_its.row(j)=beta;
-      //
+      // end my code
       
       NumericVector pred_obs=calc_rowsums(sum_new_predictions);
       post_predictions(j,_)=pred_obs;

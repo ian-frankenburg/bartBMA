@@ -107,16 +107,13 @@ NumericMatrix set_daughter_to_end_tree(int grow_node,NumericMatrix prior_tree_ta
 NumericMatrix set_daughter_to_end_mat(double d,NumericMatrix prior_tree_matrix_temp,double left_daughter,NumericVector ld_obs,NumericVector rd_obs){
 	int ncol_mat=prior_tree_matrix_temp.ncol();
 	arma::mat N=Rcpp::as<arma::mat>(prior_tree_matrix_temp);
-	//my comment out
 	//std::cout<<"prior tree mat has "<<N.n_cols<<" number of columns"<<"\n";
-	//
 	//Dec18 changed this to instead of copying last column adding a col of zeros:
 	//!!!!!change this line to have a vector of zeros re run and see if that solves problem1
   //N.insert_cols(d,0);
 	arma::vec colmat=N.col(d);
-  //my comment out
+
 	//std::cout<<"colmat size "<<colmat.size()<<" first few obs "<<colmat(0)<<" "<<colmat(1)<<" "<<colmat(2)<<"\n";
-	//
 	NumericVector colmat2=wrap(colmat);
 
 	if(d+1==ncol_mat){
@@ -863,7 +860,7 @@ arma::mat W(List sum_treetable ,List sum_obs_to_nodes,int n){
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-double sumtree_likelihood_function(NumericVector y_temp,List sum_treetable, List sum_obs_to_nodes,int n,double a,double nu,double lambda){
+double sumtree_likelihood_function(NumericVector y_temp,List sum_treetable ,List sum_obs_to_nodes,int n,double a,double nu,double lambda){
   //make W and mu matrices for the sum of trees
   arma::mat Wmat=W(sum_treetable,sum_obs_to_nodes,n);
   double b=Wmat.n_cols;
@@ -981,6 +978,9 @@ List get_best_split(NumericVector resids,arma::mat& data,NumericMatrix treetable
 		tree_prior=get_tree_prior(proposal_tree[0],proposal_tree[1],alpha,beta);
 			int_nodes=find_term_nodes(proposal_tree[0]);
 			p=int_nodes.size();
+			// MY CODE: this is where I'd use stacking weight's instead of BIC?
+			// alternatively, use AIC instead of BIC since AIC is asymptotically=LOO
+			//BIC = -2*(lik+log(tree_prior))+2*p;
 			BIC=-2*(lik+log(tree_prior))+p*log(data.n_rows);  
 			if(BIC<lowest_BIC){
 				lowest_BIC=BIC;
@@ -1081,6 +1081,7 @@ List get_best_split(NumericVector resids,arma::mat& data,NumericMatrix treetable
 //######################################################################################################################//
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
+
 List get_best_split_sum(NumericVector resids,arma::mat& data,NumericMatrix treetable,NumericMatrix tree_mat,double a,double mu,double nu,double lambda,int c,double lowest_BIC,int parent,NumericMatrix cp_mat,double alpha,double beta,int maxOWsize,int first_round,List sum_trees,List sum_trees_mat,NumericVector y_scaled,IntegerVector parent2,int i){
   //this function will search through all predictive split points and return those within Occam's Window.
 	int split_var;
@@ -1146,8 +1147,8 @@ List get_best_split_sum(NumericVector resids,arma::mat& data,NumericMatrix treet
 				continue;
 			}
 			proposal_tree=grow_tree(data,resids,treemat_c,terminal_nodes[l],treetable_c,split_var,split_point,terminal_nodes,wrap(grow_obs),d,get_min,data_curr_node);
-			NumericMatrix test = proposal_tree[0];
-			NumericMatrix test1 = proposal_tree[1];
+			NumericMatrix test =proposal_tree[0];
+			NumericMatrix test1 =proposal_tree[1];
 
 			if(test1.ncol()==3){
 				NumericVector u1=unique(test1(_,0));
@@ -1191,6 +1192,8 @@ List get_best_split_sum(NumericVector resids,arma::mat& data,NumericMatrix treet
 		
 			int_nodes=find_term_nodes(proposal_tree[0]);
 			p=int_nodes.size();
+			//MY CODE: change BIC to AIC
+			//BIC = -2*(lik+log(tree_prior))+2*p;
 			BIC=-2*(lik+log(tree_prior))+p*log(data.n_rows);  
 			if(BIC<lowest_BIC){
 				lowest_BIC=BIC;
