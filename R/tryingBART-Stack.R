@@ -130,7 +130,7 @@ dat <- dat[,-ncol(dat)]
 colnames(dat)[1] <- "y"
 
 ### INCLUDE SPURIOUS
-M <- 1000
+M <- 10
 spurious <- matrix(runif(nrow(dat)*M,0,1), nrow(dat), M)
 colnames(spurious) <- paste0("X", 1:M)
 dat <- cbind(dat, spurious)
@@ -148,7 +148,7 @@ xcovtest <- as.matrix(test[,-1])
 {
   start.time2 <- Sys.time()
   bart_bma <- bartBMA.default(x.train = as.matrix(xcov), y.train=y,
-                              x.test=as.matrix(xcovtest))
+                              x.test=as.matrix(xcovtest), gridpoint = 1, c = 1000)
   print(length(bart_bma$sumoftrees))
   end.time2 <- Sys.time()
   print(end.time2 - start.time2)
